@@ -12,7 +12,7 @@ app.use(cors());
 var port = process.env.PORT || 4000;
 
 // Listen
-app.listen(() => {
+app.listen(port, () => {
   console.log("--- DataViz Sport - ExpressJS Server ---");
   console.log("Listening on http://localhost:" + port);
 });
