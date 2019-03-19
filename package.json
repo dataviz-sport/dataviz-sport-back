@@ -1,0 +1,25 @@
+{
+  "name": "dataviz-sport-back",
+  "version": "1.0.0",
+  "description": "DataViz Sport Back",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"testing server...\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dataviz-sport/dataviz-sport-back.git"
+  },
+  "author": "Maxime AUBLET",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dataviz-sport/dataviz-sport-back/issues"
+  },
+  "homepage": "https://github.com/dataviz-sport/dataviz-sport-back#readme",
+  "dependencies": {
+    "axios": "^0.18.0",
+    "body-parser": "^1.18.3",
+    "cors": "^2.8.5",
+    "express": "^4.16.4"
+  }
+}
