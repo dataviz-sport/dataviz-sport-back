@@ -22,14 +22,16 @@ app.listen(port, () => {
 //-----------------------
 // GET ./
 app.get("/", function(req, res) {
-  console.log("200: /");
+  console.log("[IN] 200: /");
   res.send("<a href='/request'>request</a>");
 });
 
 // GET ./request
-app.get("/request", function(req, res) {
+app.get("/api/keyword/:keyword", function(req, res) {
   console.log("[IN] 200: /request");
-  articles().then(result => {
+  
+  // Requete
+  articles("trump").then(result => {
     res.send(result);
   });
 });
@@ -39,23 +41,24 @@ app.get("/request", function(req, res) {
 //-----------------------
 // Domaine
 let DOMAIN_URL = "https://api.ozae.com";
+let API_KEY = "6c87c95a1fcc4d76bfa6d77cb5cb4d77";
 
-// Récupération des articles
-articles = async () => {
-  var url_to = `${DOMAIN_URL}/gnw/articles?query=trump&key=6c87c95a1fcc4d76bfa6d77cb5cb4d77&date=20180601__20180630`;
+// Recherche par country
+articles = async keyword => {
+  var url_to = `${DOMAIN_URL}/gnw/articles?query=${keyword}&key=${API_KEY}&hours=6`;
 
   try {
     let res = await axios({
       url: url_to,
       method: "get",
-      timeout: 10000,
+      timeout: 100000,
       headers: {
         "Content-Type": "application/json"
       }
     });
-    if (res.status == 200) console.log("[OUT] Http Request: " + res.status);
+    if (res.status == 200) console.log("[OUT] " + res.status + ` : ${url_to}`);
     return res.data;
   } catch (error) {
-    console.error("[OUT] Http Request: " + res.status + " - " + error);
+    console.error(`[OUT] : ERROR at "${url_to}" - ` + error);
   }
 };
