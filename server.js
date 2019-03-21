@@ -17,35 +17,68 @@ app.listen(port, () => {
   console.log("Listening on http://localhost:" + port);
 });
 
-// ----------------------
-// ---- API EXPOSURE ----
-//-----------------------
-// GET ./
+// ------------------------------------------------------------------
+// ------------------------------ API  ------------------------------
+// ------------------------------------------------------------------
+
+// ----- GET ./ -----
 app.get("/", function(req, res) {
   console.log("[IN] 200: /");
-  res.send("<a href='/request'>request</a>");
+  res.send("API DataVizSport");
 });
 
-// GET ./request
-app.get("/api/keyword/:keyword", function(req, res) {
-  console.log("[IN] 200: /request");
-  
-  // Requete
-  articles("trump").then(result => {
+// ----- GET ./search -----
+app.get("/search/keyword/:keyword/edition/:edition", function(req, res) {
+  console.log(`[IN] 200: /search ${req.params.keyword} ${req.params.edition}`);
+
+  var keywordParams, editionParams;
+  if (req.params.keyword == "" || req.params.keyword == null)
+    keywordParams = "";
+  else keywordParams = req.params.keyword;
+  if (req.params.edition == "" || req.params.edition == null)
+    editionParams = "fr-fr";
+  else editionParams = req.params.edition;
+
+  search(keywordParams, editionParams).then(result => {
     res.send(result);
   });
 });
 
-// ----------------------
-// ---- HTTP Request ----
-//-----------------------
-// Domaine
+// ----- GET ./ngrams -----
+app.get("/ngrams/details/:details", function(req, res) {
+  console.log(`[IN] 200: /ngrams ${req.params.details}`);
+  var detailsParams = "";
+  if (req.params.details == "" || req.params.details == null)
+    detailsParams = "";
+  else detailsParams = req.params.details;
+
+  ngrams(detailsParams).then(result => {
+    res.send(result);
+  });
+});
+
+// ----- GET ./api/trends -----
+app.get("/trends/keyword/:keyword", function(req, res) {
+  console.log(`[IN] 200: /trends ${req.params.keyword}`);
+  var keywordParams = "";
+  if (req.params.keyword == "" || req.params.keyword == null)
+    keywordParams = "";
+  else keywordParams = req.params.keyword;
+  results = trends(keywordParams);
+  res.send(result);
+});
+
+// ------------------------------------------------------------------
+// -------------------------- HTTP Request --------------------------
+// ------------------------------------------------------------------
+
+// Init domaine & key
 let DOMAIN_URL = "https://api.ozae.com";
 let API_KEY = "6c87c95a1fcc4d76bfa6d77cb5cb4d77";
 
-// Recherche par country
-articles = async keyword => {
-  var url_to = `${DOMAIN_URL}/gnw/articles?query=${keyword}&key=${API_KEY}&hours=6`;
+// ----- Recherche mot clé -----
+search = async (keyword, edition) => {
+  var url_to = `${DOMAIN_URL}/gnw/articles?query=${keyword}&key=${API_KEY}&edition=${edition}&hours=3&topic=s`;
 
   try {
     let res = await axios({
@@ -60,5 +93,94 @@ articles = async keyword => {
     return res.data;
   } catch (error) {
     console.error(`[OUT] : ERROR at "${url_to}" - ` + error);
+    return { error: "timeout" };
   }
+};
+
+// ----- Recherche 30 ngrams France -----
+ngrams = async bool_details => {
+  var url_to = `${DOMAIN_URL}/gnw/ngrams?key=${API_KEY}&hours=3&topic=s&hide_details=${bool_details}&limit=30`;
+
+  try {
+    let res = await axios({
+      url: url_to,
+      method: "get",
+      timeout: 100000,
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+
+    if (res.status == 200) console.log("[OUT] " + res.status + ` : ${url_to}`);
+    return res.data;
+  } catch (error) {
+    console.error(`[OUT] : ERROR at "${url_to}" - ` + error);
+    return { error: "timeout" };
+  }
+};
+
+// ----- Tendances sportives -----
+trends = keyword => {
+  let url_to = `${DOMAIN_URL}/gnw/articles?query=${keyword}&key=${API_KEY}&hours=3&topic=s`;
+
+  options = {
+    fr: {
+      url: url_to + "&edition=fr-fr",
+      method: "get",
+      timeout: 100000,
+      headers: { "Content-Type": "application/json" }
+    },
+    it: {
+      url: url_to + "&edition=it-it",
+      method: "get",
+      timeout: 100000,
+      headers: { "Content-Type": "application/json" }
+    },
+    de: {
+      url: url_to + "&edition=de-de",
+      method: "get",
+      timeout: 100000,
+      headers: { "Content-Type": "application/json" }
+    },
+    uk: {
+      url: url_to + "&edition=en-gb",
+      method: "get",
+      timeout: 100000,
+      headers: { "Content-Type": "application/json" }
+    },
+    es: {
+      url: url_to + "&edition=es-es",
+      method: "get",
+      timeout: 100000,
+      headers: { "Content-Type": "application/json" }
+    },
+    us: {
+      url: url_to + "&edition=en-us-ny",
+      method: "get",
+      timeout: 100000,
+      headers: { "Content-Type": "application/json" }
+    }
+  };
+
+  axios
+    .all([
+      axios.request(options.fr),
+      axios.request(options.it),
+      axios.request(options.de),
+      axios.request(options.uk),
+      axios.request(options.es),
+      axios.request(options.us)
+    ])
+    .then(
+      axios.spread(function(res_fr, res_it, res_de, res_uk, res_es, res_us) {
+        return {
+          fr: res_fr.data,
+          it: res_it.data,
+          de: res_de.data,
+          uk: res_uk.data,
+          es: res_es.data,
+          us: res_us.data
+        };
+      })
+    );
 };
