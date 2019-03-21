@@ -64,8 +64,9 @@ app.get("/trends/keyword/:keyword", function(req, res) {
   if (req.params.keyword == "" || req.params.keyword == null)
     keywordParams = "";
   else keywordParams = req.params.keyword;
-  results = trends(keywordParams);
-  res.send(result);
+  trends(keywordParams).then(results => {
+    res.send(results);
+  });
 });
 
 // ------------------------------------------------------------------
@@ -84,7 +85,7 @@ search = async (keyword, edition) => {
     let res = await axios({
       url: url_to,
       method: "get",
-      timeout: 100000,
+      timeout: 200000,
       headers: {
         "Content-Type": "application/json"
       }
@@ -105,7 +106,7 @@ ngrams = async bool_details => {
     let res = await axios({
       url: url_to,
       method: "get",
-      timeout: 100000,
+      timeout: 200000,
       headers: {
         "Content-Type": "application/json"
       }
@@ -120,49 +121,49 @@ ngrams = async bool_details => {
 };
 
 // ----- Tendances sportives -----
-trends = keyword => {
-  let url_to = `${DOMAIN_URL}/gnw/articles?query=${keyword}&key=${API_KEY}&hours=3&topic=s`;
+trends = async keyword => {
+  let url_to = `${DOMAIN_URL}/gnw/articles?query=${keyword}&key=${API_KEY}&hours=2&topic=s`;
 
   options = {
     fr: {
       url: url_to + "&edition=fr-fr",
       method: "get",
-      timeout: 100000,
+      timeout: 200000,
       headers: { "Content-Type": "application/json" }
     },
     it: {
       url: url_to + "&edition=it-it",
       method: "get",
-      timeout: 100000,
+      timeout: 200000,
       headers: { "Content-Type": "application/json" }
     },
     de: {
       url: url_to + "&edition=de-de",
       method: "get",
-      timeout: 100000,
+      timeout: 200000,
       headers: { "Content-Type": "application/json" }
     },
     uk: {
       url: url_to + "&edition=en-gb",
       method: "get",
-      timeout: 100000,
+      timeout: 200000,
       headers: { "Content-Type": "application/json" }
     },
     es: {
       url: url_to + "&edition=es-es",
       method: "get",
-      timeout: 100000,
+      timeout: 200000,
       headers: { "Content-Type": "application/json" }
     },
     us: {
       url: url_to + "&edition=en-us-ny",
       method: "get",
-      timeout: 100000,
+      timeout: 200000,
       headers: { "Content-Type": "application/json" }
     }
   };
 
-  axios
+  return await axios
     .all([
       axios.request(options.fr),
       axios.request(options.it),
@@ -182,5 +183,9 @@ trends = keyword => {
           us: res_us.data
         };
       })
-    );
+    )
+    .catch(error => {
+      console.error(`[OUT] : ERROR at "${url_to}" - ` + error);
+      return { error: "timeout" };
+    });
 };
