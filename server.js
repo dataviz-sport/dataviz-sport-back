@@ -1,8 +1,10 @@
+// Import
 var express = require("express"),
   bodyParser = require("body-parser"),
   axios = require("axios"),
   http = require("http"),
-  cors = require("cors");
+  cors = require("cors"),
+  mcache = require("memory-cache");
 
 // Init
 const app = express();
@@ -10,6 +12,71 @@ app.use(express.static("public"));
 app.use(bodyParser.json());
 app.use(cors());
 var port = process.env.PORT || 4000;
+
+// Cache
+var cacheNGram = duration => {
+  return (req, res, next) => {
+    let key =
+      "__dataviz__" +
+      (req.originalUrl || req.url) +
+      (req.params.details != null ? req.params.details : "");
+    let cachedBody = mcache.get(key);
+    if (cachedBody) {
+      res.send(cachedBody);
+      return;
+    } else {
+      res.sendResponse = res.send;
+      res.send = body => {
+        mcache.put(key, body, duration * 1000);
+        res.sendResponse(body);
+      };
+      next();
+    }
+  };
+};
+
+var cacheSearch = duration => {
+  return (req, res, next) => {
+    let key =
+      "__dataviz__" +
+      (req.originalUrl || req.url) +
+      (req.params.keyword != null ? req.params.keyword : "") +
+      (req.params.edition != null ? req.params.edition : "");
+    let cachedBody = mcache.get(key);
+    if (cachedBody) {
+      res.send(cachedBody);
+      return;
+    } else {
+      res.sendResponse = res.send;
+      res.send = body => {
+        mcache.put(key, body, duration * 1000);
+        res.sendResponse(body);
+      };
+      next();
+    }
+  };
+};
+
+var cacheTrends = duration => {
+  return (req, res, next) => {
+    let key =
+      "__dataviz__" +
+      (req.originalUrl || req.url) +
+      (req.params.keyword != null ? req.params.keyword : "");
+    let cachedBody = mcache.get(key);
+    if (cachedBody) {
+      res.send(cachedBody);
+      return;
+    } else {
+      res.sendResponse = res.send;
+      res.send = body => {
+        mcache.put(key, body, duration * 1000);
+        res.sendResponse(body);
+      };
+      next();
+    }
+  };
+};
 
 // Listen
 app.listen(port, () => {
@@ -22,30 +89,36 @@ app.listen(port, () => {
 // ------------------------------------------------------------------
 
 // ----- GET ./ -----
-app.get("/", function(req, res) {
+app.get("/", (req, res) => {
   console.log("[IN] 200: /");
   res.send("API DataVizSport");
 });
 
 // ----- GET ./search -----
-app.get("/search/keyword/:keyword/edition/:edition", function(req, res) {
-  console.log(`[IN] 200: /search ${req.params.keyword} ${req.params.edition}`);
+app.get(
+  "/search/keyword/:keyword/edition/:edition",
+  cacheSearch(3600),
+  (req, res) => {
+    console.log(
+      `[IN] 200: /search ${req.params.keyword} ${req.params.edition}`
+    );
 
-  var keywordParams, editionParams;
-  if (req.params.keyword == "" || req.params.keyword == null)
-    keywordParams = "";
-  else keywordParams = req.params.keyword;
-  if (req.params.edition == "" || req.params.edition == null)
-    editionParams = "fr-fr";
-  else editionParams = req.params.edition;
+    var keywordParams, editionParams;
+    if (req.params.keyword == "" || req.params.keyword == null)
+      keywordParams = "";
+    else keywordParams = req.params.keyword;
+    if (req.params.edition == "" || req.params.edition == null)
+      editionParams = "fr-fr";
+    else editionParams = req.params.edition;
 
-  search(keywordParams, editionParams).then(result => {
-    res.send(result);
-  });
-});
+    search(keywordParams, editionParams).then(result => {
+      res.send(result);
+    });
+  }
+);
 
 // ----- GET ./ngrams -----
-app.get("/ngrams/details/:details", function(req, res) {
+app.get("/ngrams/details/:details", cacheNGram(3600), (req, res) => {
   console.log(`[IN] 200: /ngrams ${req.params.details}`);
   var detailsParams = "";
   if (req.params.details == "" || req.params.details == null)
@@ -58,7 +131,7 @@ app.get("/ngrams/details/:details", function(req, res) {
 });
 
 // ----- GET ./api/trends -----
-app.get("/trends/keyword/:keyword", function(req, res) {
+app.get("/trends/keyword/:keyword", cacheTrends(3600), (req, res) => {
   console.log(`[IN] 200: /trends ${req.params.keyword}`);
   var keywordParams = "";
   if (req.params.keyword == "" || req.params.keyword == null)
@@ -122,7 +195,7 @@ ngrams = async bool_details => {
 
 // ----- Tendances sportives -----
 trends = async keyword => {
-  let url_to = `${DOMAIN_URL}/gnw/articles?query=${keyword}&key=${API_KEY}&hours=2&topic=s`;
+  let url_to = `${DOMAIN_URL}/gnw/articles?key=${API_KEY}&hours=2&topic=s&query=${keyword}`;
 
   options = {
     fr: {
@@ -188,4 +261,39 @@ trends = async keyword => {
       console.error(`[OUT] : ERROR at "${url_to}" - ` + error);
       return { error: "timeout" };
     });
+};
+
+// ------------------------------------------------------------------
+// -------------------------- Utils ------ --------------------------
+// ------------------------------------------------------------------
+getTranslation = keyword => {
+  switch (keyword) {
+    case "football":
+      return {
+        fr: "football",
+        it: "calcio",
+        de: "fussball",
+        uk: "football",
+        es: "futbol",
+        us: "soccer"
+      };
+    case "basketball":
+      return {
+        fr: "basketball",
+        it: "pallacanestro",
+        de: "basketball",
+        uk: "basketball",
+        es: "baloncesto",
+        us: "basket"
+      };
+    case "tennis":
+      return {
+        fr: "tennis",
+        it: "tennis",
+        de: "tennis",
+        uk: "tennis",
+        es: "tenis",
+        us: "tennis"
+      };
+  }
 };
