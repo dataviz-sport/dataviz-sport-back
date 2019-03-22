@@ -14,11 +14,13 @@ Dans le dossier
 
 ```Bash
 $ cd dataviz-sport-back
+
+$ npm install
 ```
 
 Start server :
 
-```
+```Bash
 $ node server.js
 ```
 
@@ -40,4 +42,6 @@ Recherche 30 grams en france :
 
 #### Requete 3:
 
-En cours ....
+Récupération des articles de tous les pays pour un mot clé :
+
+- [localhost:4000/trends/keyword/{_MOTCLEF_}](localhost:4000/trends/keyword/football)
