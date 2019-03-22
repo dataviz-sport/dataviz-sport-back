@@ -173,7 +173,7 @@ search = async (keyword, edition) => {
 
 // ----- Recherche 30 ngrams France -----
 ngrams = async bool_details => {
-  var url_to = `${DOMAIN_URL}/gnw/ngrams?key=${API_KEY}&hours=3&topic=s&hide_details=${bool_details}&limit=30`;
+  var url_to = `${DOMAIN_URL}/gnw/ngrams?key=${API_KEY}&hours=3&topic=s&hide_details=${bool_details}&limit=5`;
 
   try {
     let res = await axios({
